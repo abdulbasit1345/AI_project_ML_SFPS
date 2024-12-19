@@ -2,6 +2,8 @@
 main.py
 .idea/
 amazon_AI_data.xlsx
+cleaned_sales_data.xlsx
 
 .ipynb_checkpoints
-/Sales Forecasting and segmentation project
+/Sales_forecasting.ipynb
+/~$cleaned_sales_data.xlsx
