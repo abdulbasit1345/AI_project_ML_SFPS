@@ -4,7 +4,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
 # Load the data
-file_path = "Data.xlsx"
+file_path = "../data/Data.xlsx"
 data = pd.read_excel(file_path, sheet_name="Sheet1")
 
 # Data Cleaning

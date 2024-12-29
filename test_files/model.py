@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 from datetime import datetime, timedelta
 
 # Load Dataset
-file_path = 'data/cleaned_sales_data.xlsx'
+file_path = '../data/cleaned_sales_data.xlsx'
 data = pd.read_excel(file_path)
 
 # Preprocessing
