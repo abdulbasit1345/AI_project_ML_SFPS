@@ -9,9 +9,13 @@ import plotly.express as px
 class SegmentationPlotter:
 
     @staticmethod
-    def plot_elbow_method(data: pd.DataFrame, features: list):
+    def plot_elbow_method(data: pd.DataFrame):
+        aggregated_data = data.groupby('product-name').agg(
+            total_quantity=('quantity', 'sum'),
+            total_sales=('item-price', 'sum')
+        ).reset_index()
         scaler = StandardScaler()
-        scaled_features = scaler.fit_transform(data[features])
+        scaled_features = scaler.fit_transform(aggregated_data[['total_quantity', 'total_sales']])
 
         inertia = []
         for k in range(1, 10):
@@ -24,20 +28,31 @@ class SegmentationPlotter:
         plt.title('Elbow Method for Optimal K')
         plt.xlabel('Number of Clusters (k)')
         plt.ylabel('Inertia')
-        plt.show()
+
+        return plt
 
     @staticmethod
-    def plot_clusters(data: pd.DataFrame, x: str, y: str, cluster_col: str):
-        fig = px.scatter(
-            data,
-            x=x,
-            y=y,
-            color=cluster_col,
-            title="Cluster Visualization",
-            labels={x: x.capitalize(), y: y.capitalize()},
+    def plot_clusters(segments):
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        sns.scatterplot(
+            data = segments,
+            x='total_revenue',
+            y='total_quantity',
+            hue='segment',
+            style='segment',
+            s=100,
+            ax=ax
         )
-        fig.update_traces(marker=dict(size=10, opacity=0.8))
-        fig.show()
+        # Formatting
+        plt.title('Product Segments by Revenue and Quantity', fontsize=14)
+        plt.xlabel('Total Revenue', fontsize=12)
+        plt.ylabel('Total Quantity', fontsize=12)
+
+        # Adjust layout
+        plt.tight_layout()
+
+        return fig
 
     @staticmethod
     def plot_sales_distribution(data: pd.DataFrame, segment_col: str, sales_col: str):
@@ -52,4 +67,5 @@ class SegmentationPlotter:
             color=segment_col
         )
         fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
-        fig.show()
+
+        return fig
