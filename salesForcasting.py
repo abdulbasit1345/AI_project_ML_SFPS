@@ -4,47 +4,41 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.linear_model import LinearRegression
+from datetime import datetime, timedelta
 
 # Function to process and forecast sales
 def sales_forecasting(data):
     # Preprocessing
     data['purchase-date'] = pd.to_datetime(data['purchase-date'])
-    data.fillna(0, inplace=True)  # Handle missing values
+    data.fillna(0, inplace=True)
     data['total-tax'] = data['shipping-tax'] + data['item-tax'] + data['gift-wrap-tax']
     data['revenue'] = (
-        data['item-price'] + data['shipping-price'] + data['gift-wrap-price'] - data['item-promotion-discount']
+            data['item-price'] + data['shipping-price'] + data['gift-wrap-price'] - data['item-promotion-discount']
     )
     daily_revenue = data.groupby('purchase-date')['revenue'].sum().reset_index()
 
+    # Add features
     daily_revenue['day_of_week'] = daily_revenue['purchase-date'].dt.day_name()
-    daily_revenue['ordinal_date'] = daily_revenue['purchase-date'].map(pd.Timestamp.toordinal)
 
-    # Prepare data for forecasting
-    X = daily_revenue[['ordinal_date']]
-    y = daily_revenue['revenue']
+    # Prepare data for model
+    X = daily_revenue['purchase-date'].map(datetime.toordinal).values.reshape(-1, 1)
+    y = daily_revenue['revenue'].values
 
     # Train model
     model = LinearRegression()
     model.fit(X, y)
 
-    # Predict for the next 30 days
-    future_dates = np.arange(X['ordinal_date'].max() + 1, X['ordinal_date'].max() + 31).reshape(-1, 1)
-    future_dates_actual = pd.to_datetime(future_dates.ravel(), origin='1899-12-30', unit='D', errors='coerce')
+    # Generate future dates
+    last_date = daily_revenue['purchase-date'].max()
+    future_dates_dt = [last_date + timedelta(days=x) for x in range(1, 31)]
+    future_dates_ordinal = np.array([d.toordinal() for d in future_dates_dt]).reshape(-1, 1)
 
-    # Drop any invalid timestamps if they still exist (unlikely after correction)
-    future_dates_actual = future_dates_actual.dropna()
+    # Make predictions
+    future_revenue = model.predict(future_dates_ordinal)
 
-    # Check if lengths match
-    future_revenue = model.predict(future_dates)
+    return daily_revenue, future_dates_ordinal, future_revenue, future_dates_dt, last_date
 
-    # Ensure future_dates_actual and future_revenue have the same length
-    if len(future_dates_actual) != len(future_revenue):
-        # Adjust future_dates_actual to match the length of future_revenue
-        min_length = min(len(future_dates_actual), len(future_revenue))
-        future_dates_actual = future_dates_actual[:min_length]
-        future_revenue = future_revenue[:min_length]
 
-    return daily_revenue, future_dates_actual, future_revenue
 
 # Streamlit front-end
 def main():
@@ -60,11 +54,14 @@ def main():
         st.dataframe(data.head())  # Display first few rows
         
         # Call forecasting function
-        daily_revenue, future_dates_actual, future_revenue = sales_forecasting(data)
+        daily_revenue, future_dates_ordinal, future_revenue, future_dates_dt, last_date = sales_forecasting(data)
         
         # Display Forecasting Results
         st.subheader("Forecasted Revenue for the Next 30 Days")
-        forecast_df = pd.DataFrame({'Date': future_dates_actual, 'Forecasted Revenue': future_revenue})
+        forecast_df = pd.DataFrame({
+            'Date': pd.to_datetime([datetime.fromordinal(int(date[0])) for date in future_dates_ordinal]),
+            'Forecasted Revenue': future_revenue
+        })
         st.write(forecast_df)
 
         # Popular Products Analysis
@@ -77,9 +74,11 @@ def main():
         st.subheader("Sales Forecasting Visualization")
         sns.set_theme(style="whitegrid")
 
+        # Create visualization
         plt.figure(figsize=(14, 8))
+        sns.set_theme(style="whitegrid")
 
-        # Plot observed revenue (historical data)
+        # Plot historical data
         plt.plot(
             daily_revenue['purchase-date'],
             daily_revenue['revenue'],
@@ -91,9 +90,9 @@ def main():
             linestyle='--'
         )
 
-        # Plot forecasted revenue (predicted data for the next 30 days)
+        # Plot forecast
         plt.plot(
-            future_dates_actual,
+            future_dates_dt,
             future_revenue,
             label="Forecasted Revenue (Next 30 Days)",
             marker='x',
@@ -103,26 +102,39 @@ def main():
             linestyle='-.'
         )
 
-        # Highlight the transition point between observed and forecasted data
-        transition_date = daily_revenue['purchase-date'].max()
-        plt.axvline(transition_date, color='green', linestyle='--', linewidth=1.5, label="Forecast Start")
+        # Highlight transition point
+        plt.axvline(last_date, color='green', linestyle='--', linewidth=1.5, label="Forecast Start")
 
-        # Add labels, title, and legend
+        # Formatting
         plt.title("Sales Forecasting: Observed vs. Predicted Revenue", fontsize=18)
         plt.xlabel("Date", fontsize=14)
         plt.ylabel("Revenue ($)", fontsize=14)
         plt.legend(fontsize=12, loc="upper left")
-
-        # Enhance tick formatting for dates and revenue
         plt.xticks(fontsize=12, rotation=45)
         plt.yticks(fontsize=12)
+        plt.grid(True, linestyle=':', alpha=0.7)
 
-        # Add a grid for clarity
-        plt.grid(color='gray', linestyle=':', linewidth=0.5)
+        # Format dates on x-axis
+        plt.gcf().autofmt_xdate()  # Automatically format date labels
 
         # Show the plot
         plt.tight_layout()
-        st.pyplot(plt)
+        st.pyplot(plt.gcf())
+
+        # Print forecast results
+        forecast_df = pd.DataFrame({
+            'Date': future_dates_dt,
+            'Forecasted_Revenue': future_revenue
+        })
+        print("\nForecast for next 30 days:")
+        print(forecast_df.to_string(index=False))
+
+        # Print popular products
+        popular_products = data['sku'].value_counts().reset_index()
+        popular_products.columns = ['product', 'count']
+        print("\nTop Products:")
+        print(popular_products.head())
+
 
     except FileNotFoundError:
         st.error("The file 'Data.xlsx' was not found. Please make sure it is in the same directory as the script.")
