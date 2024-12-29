@@ -2,7 +2,7 @@
 main.py
 .idea/
 amazon_AI_data.xlsx
-cleaned_sales_data.xlsx
+data/cleaned_sales_data.xlsx
 
 .ipynb_checkpoints
 /Sales_forecasting.ipynb
