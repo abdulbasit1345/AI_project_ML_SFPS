@@ -29,14 +29,40 @@ def show_segmentation_page(data):
     # Visualization section
     st.subheader("Visualizations")
 
-    # Elbow Method Plot
-    st.write("### Optimal Number of Clusters")
-    st.pyplot(SegmentationPlotter.plot_elbow_method(metrics, ['total_revenue', 'total_quantity', 'total_sales', 'avg_discount']))
-
+    # Scatter Plot
     # Cluster Visualization
     st.write("### Cluster Visualization")
-    SegmentationPlotter.plot_clusters(segmented_data, x="total_quantity", y="total_sales", cluster_col="segment")
+    plotter = SegmentationPlotter()
+    fig = plotter.plot_clusters(segmented_data)
+    st.pyplot(fig)
+
+
+# Elbow Method Plot
+    st.write("### Optimal Number of Clusters")
+    elbow_method = plotter.plot_elbow_method(data)
+    st.pyplot(elbow_method)
+
+    aggregated_data = data.groupby('product-name').agg(
+        total_quantity=('quantity', 'sum'),
+        total_sales=('item-price', 'sum')
+    ).reset_index()
 
     # Sales Distribution Plot
-    st.write("### Sales Distribution by Segment")
-    SegmentationPlotter.plot_sales_distribution(segmented_data, segment_col="segment", sales_col="total_sales")
+    # st.write("### Sales Distribution by Segment")
+    # sales_distribution_plot = SegmentationPlotter.plot_sales_distribution(segmented_data, segment_col="segment",
+    #                                                                       sales_col='avg_revenue_per_sale')
+    # st.pyplot(sales_distribution_plot)
+
+    # Show segment statistics
+    st.subheader("Segment Statistics")
+    segment_stats = segmented_data.groupby('segment_label').agg({
+        'total_revenue': 'sum',
+        'total_quantity': 'sum',
+        'avg_price': 'mean',
+        'sku': 'count'
+    }).round(2)
+    segment_stats.columns = ['Total Revenue', 'Total Quantity', 'Average Price', 'Number of Products']
+    st.dataframe(segment_stats)
+
+
+

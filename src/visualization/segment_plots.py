@@ -67,5 +67,4 @@ class SegmentationPlotter:
             color=segment_col
         )
         fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
-
         return fig

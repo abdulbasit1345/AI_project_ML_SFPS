@@ -11,29 +11,30 @@ from src.visualization import ForecastPlotter
 def show_forecast_page(data):
     st.title("Sales Forecasting")
 
-    # Create forecaster instance
-    forecaster = SalesForecaster(data)
+    try:
+        # Generate forecast
+        daily_revenue = data.get_daily_revenue()
 
-    # Generate forecast
-    future_dates_dt, future_revenue = forecaster.generate_forecast()
+        # Create forecaster instance
+        forecaster = SalesForecaster(daily_revenue)
+        future_dates_dt, future_revenue, last_date = forecaster.generate_forecast()
 
-    # Create forecast DataFrame
-    forecast_df = forecaster.create_forecast_dataframe(future_dates_dt, future_revenue)
+        # Create visualization
+        forecast_df = forecaster.create_forecast_dataframe(
+            future_dates_dt,
+            future_revenue
+        )
 
-    # Display forecast
-    st.subheader("Forecasted Revenue for the Next 30 Days")
-    st.write(forecast_df)
+        # Plot
+        plotter = ForecastPlotter(daily_revenue)
+        fig = plotter.create_forecast_plot(
+            future_dates_dt, future_revenue,
+            last_date
+        )
 
-    # Create and display plot
-    plotter = ForecastPlotter()
-    fig = plotter.create_forecast_plot(
-        historical_dates=data['purchase-date'],
-        historical_revenue=data['revenue'],
-        forecast_dates=future_dates_dt,
-        forecast_revenue=future_revenue,
-        last_date=data['purchase-date'].max()
-    )
-
-    st.subheader("Sales Forecast Visualization")
-    st.pyplot(fig)
-
+        # Display results
+        st.pyplot(fig)
+        st.subheader("Forecasted Revenue")
+        st.dataframe(forecast_df)
+    except Exception as e:
+        st.error(f"Error in forecast generation: {e}")
