@@ -24,7 +24,7 @@ class ProductSegmentation:
     def calculate_product_metrics(self) -> pd.DataFrame:
         """Calculate metrics for each product"""
         try:
-            product_metrics = self.data.groupby('sku').agg({
+            product_metrics = self.data.groupby('product-name').agg({
                 'revenue': ['sum', 'mean'],
                 'quantity': 'sum',
                 'item-price': 'mean',  # Changed from 'sum' to 'mean'

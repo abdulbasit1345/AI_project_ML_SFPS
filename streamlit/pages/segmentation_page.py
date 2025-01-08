@@ -24,7 +24,7 @@ def show_segmentation_page(data):
 
     # Overview section
     st.subheader("Overview of Segmented Data")
-    st.dataframe(segmented_data.head())
+    st.dataframe(segmented_data)
 
     # Visualization section
     st.subheader("Visualizations")
@@ -42,7 +42,7 @@ def show_segmentation_page(data):
     elbow_method = plotter.plot_elbow_method(data)
     st.pyplot(elbow_method)
 
-    aggregated_data = data.groupby('product-name').agg(
+    aggregated_data = data.groupby('sku').agg(
         total_quantity=('quantity', 'sum'),
         total_sales=('item-price', 'sum')
     ).reset_index()
@@ -61,6 +61,8 @@ def show_segmentation_page(data):
         'avg_price': 'mean',
         'sku': 'count'
     }).round(2)
+
+
     segment_stats.columns = ['Total Revenue', 'Total Quantity', 'Average Price', 'Number of Products']
     st.dataframe(segment_stats)
 

@@ -9,6 +9,7 @@ from src.visualization import ForecastPlotter
 
 
 def show_forecast_page(data):
+
     st.title("Sales Forecasting")
 
     try:
